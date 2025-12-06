@@ -111,10 +111,10 @@ if __name__ == "__main__":
 
     F_max=0
     best_param = 0
-    pitch_kp_list = [5,8,10,15,20]
-    pitch_ki_list = [2,5,8,10]
-    position_kp_list = [5,8,10,15,20]
-    position_ki_list = [2,5,8,10]
+    pitch_kp_list = [8,10,15]
+    pitch_ki_list = [2,5,8]
+    position_kp_list = [8,10,15]
+    position_ki_list = [2,5,8]
     for k in pitch_kp_list:
         for i in pitch_ki_list:
             for j in position_ki_list:
@@ -124,4 +124,4 @@ if __name__ == "__main__":
                         if F>F_max:
                             best_param = (k,i,j,l)
                             F_max =F
-    print("les meilleurs params avec le MFOS :" (best_param, F_max))
+    print("les meilleurs params avec le MFOS :", (best_param, F_max))
