@@ -6,6 +6,10 @@
 
 """Tiny example: balancing by PD feedback to wheel velocities."""
 
+import sys
+import os 
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+
 import gymnasium as gym
 
 import upkie.envs
@@ -20,7 +24,7 @@ if __name__ == "__main__":
             pitch = observation[0]
             ground_position = observation[1]
             ground_velocity = observation[3]
-            v = 10.0 * pitch + 1.0 * ground_position + 0.1 * ground_velocity
+            v = 10.0 * pitch + 0* ground_position + 0* ground_velocity
             action[0] = v  # action is the next commanded ground velocity
             observation, reward, terminated, truncated, _ = env.step(action)
             env.unwrapped.log("pitch", pitch)

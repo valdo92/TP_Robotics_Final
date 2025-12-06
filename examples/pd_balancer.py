@@ -25,4 +25,5 @@ if __name__ == "__main__":
             observation, reward, terminated, truncated, _ = env.step(action)
             env.unwrapped.log("pitch", pitch)
             if terminated or truncated:
+                print("it ended snif")
                 observation, _ = env.reset()
