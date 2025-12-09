@@ -139,5 +139,5 @@ def run_one_simulation(
 
 
 if __name__ == "__main__":
-    F = run_one_simulation(pitch_kp = 20, force=3., failure_angle=np.pi/6)
+    F = run_one_simulation(pitch_kp = 10, force=3., failure_angle=np.pi/6)
     print(F)
