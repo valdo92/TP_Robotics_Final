@@ -10,12 +10,12 @@ from upkie.utils.raspi import configure_agent_process, on_raspi
 
 upkie.envs.register()
 
-FORCE_N = 0.
+FORCE_N = 3.
 FORCE_DURATION = 1
 FORCE_STEP = 0.5
 TIME_AFTER_FORCE = 5
-TIME_BEFORE_FORCE = 10
-pitch_kp = 100
+TIME_BEFORE_FORCE = 1
+pitch_kp = 10
 
 results = []
 
@@ -95,7 +95,7 @@ def main(
 
         observation, _, terminated, truncated, info = env.step(action)
 
-        if pitch >= np.pi/4 or pitch <= -np.pi/4:
+        if pitch >= 1 or pitch <= -1:
             success=False
 
             break
