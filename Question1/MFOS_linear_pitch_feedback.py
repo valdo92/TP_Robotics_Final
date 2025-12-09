@@ -11,13 +11,6 @@ from upkie.utils.raspi import configure_agent_process, on_raspi
 upkie.envs.register()
 
 
-force_duration = 1
-time_after_force = 5
-time_before_force = 3
-pitch_kp = 10
-
-results = []
-
 
 
 upkie.envs.register()
@@ -36,7 +29,6 @@ def main(
     failure_angle = np.pi/6
     
 ):
-    results = []
 
     obs, info = env.reset()
     simtime = 0.0
@@ -113,8 +105,6 @@ def main(
         if not force_active and simtime > force_duration + time_after_force + time_before_force:
             success = True
             break
-    results.append((
-        force, success, pitches))
     print(f"Force {
         force:>6.1f} N -> {'Success' if success else 'Failure'}")
     return success
@@ -134,6 +124,7 @@ def run_one_simulation(
         configure_agent_process()
     with gym.make("UpkieGroundVelocity-v4", frequency=100.0) as env: 
         F = main(
+            env,
             pitch_kp,
             pitch_ki,
             position_kp,
@@ -146,13 +137,7 @@ def run_one_simulation(
             )
     return F
 
- 
-
-
 
 if __name__ == "__main__":
-    if on_raspi():
-        configure_agent_process()
-    with gym.make("UpkieGroundVelocity-v4", frequency=100.0) as env:
-        F = main(env, pitch_kp = pitch_kp, force=4., failure_angle=np.pi/6)
-        print(F)
+    F = run_one_simulation(pitch_kp = 20, force=3., failure_angle=np.pi/6)
+    print(F)
