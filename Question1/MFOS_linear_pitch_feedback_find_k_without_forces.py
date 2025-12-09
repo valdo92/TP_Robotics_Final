@@ -7,15 +7,14 @@ import gymnasium as gym
 import numpy as np
 import upkie.envs
 from upkie.utils.raspi import configure_agent_process, on_raspi
-from time import sleep
 
 upkie.envs.register()
 
 
 FORCE_DURATION = 1
 FORCE_STEP = 0.5
-MAX_FORCE = 40
-MIN_FORCE = 30
+MAX_FORCE = 20
+MIN_FORCE = 5.
 TIME_AFTER_FORCE = 5
 TIME_BEFORE_FORCE = 10
 
@@ -29,13 +28,13 @@ upkie.envs.register()
 
 def main(
     env,
-    MIN_FORCE,
-    pitch_kp: float =10.0,
-    pitch_ki: float = 1,
-    position_kp: float = 10,
-    position_ki: float = 1,
+    pitch_kp: float =100.0,
+    pitch_ki: float = 0,
+    position_kp: float = 0,
+    position_ki: float = 0,
+    angle_failure=np.pi/6
 ):
-    force_values = np.arange(MIN_FORCE, MAX_FORCE + FORCE_STEP, FORCE_STEP)
+    force_values = np.arange(FORCE_STEP, MAX_FORCE + FORCE_STEP, FORCE_STEP)
     results = []
 
     for FORCE_N in force_values:
@@ -51,7 +50,7 @@ def main(
         pitches=[]
         action = 0.0 * env.action_space.sample()  # 1D action: [velocity]
         while True:
-            simtime += dt
+            simtime +=dt
             pitch = observation[0]
             pitches.append(pitch)
             position = observation[1]
@@ -83,21 +82,21 @@ def main(
 
             observation, _, terminated, truncated, info = env.step(action)
 
-            if pitch >= np.pi/2 or pitch <= -np.pi/2:
+            if pitch >= angle_failure or pitch <= -angle_failure:
                 success=False
 
                 break
 
-            if terminated or truncated:
-                
+            if terminated or truncated:   
                 observation, _ = env.reset()
                 pitch_integrator = 0.0
                 position_integrator = 0.0
                 success=False
                 break
-
+            
             if not force_active and simtime > FORCE_DURATION + TIME_AFTER_FORCE + TIME_BEFORE_FORCE:
                 break
+
 
         results.append((FORCE_N, success, pitches))
         print(f"Force {FORCE_N:>6.1f} N -> {'Success' if success else 'Failure'}")
@@ -108,8 +107,9 @@ def main(
 
     print("\nSummary of tested forces:")
     for f, s, picthes in results:
-        print(f" param : {(pitch_kp,pitch_ki,position_kp,position_ki)} :  {f:6.1f} N -> {'Success' if s else 'Failure'} ; {pitches}")
-    return(f)     
+        print(f"pitch_kp = {pitch_kp}  {f:6.1f} N -> {'Success' if s else 'Failure'} ; {pitches}")     
+
+    return(f)
 
 
 
@@ -117,20 +117,14 @@ if __name__ == "__main__":
     if on_raspi():
         configure_agent_process()
 
-
     F_max=0
-    best_param = 0
-    pitch_kp_list = [8,10,15]
-    pitch_ki_list = [2,5,8]
-    position_kp_list = [8,10,15]
-    position_ki_list = [2,5,8]
+    kp_pitch_best = 0
+    pitch_kp_list = [1,2,5,8,10, 15, 20, 100]
+
     for k in pitch_kp_list:
-        for i in pitch_ki_list:
-            for j in position_ki_list:
-                for l in position_kp_list:
-                    with gym.make("UpkieGroundVelocity-v4", frequency=100.0) as env:
-                        F = main(env, MIN_FORCE=F_max, pitch_kp = k, pitch_ki= i, position_ki=j, position_kp=l)
-                        if F>F_max:
-                            best_param = (k,i,j,l)
-                            F_max =F
-    print("les meilleurs params avec le MFOS :", (best_param, F_max))
+        with gym.make("UpkieGroundVelocity-v4", frequency=100.0) as env:
+            F = main(env, pitch_kp = k)
+            if F>F_max:
+                kp_pitch_best = k
+                F_max =F
+    print("les meilleurs params avec le MFOS :" (kp_pitch_best, F_max))

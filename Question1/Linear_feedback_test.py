@@ -24,7 +24,7 @@ if __name__ == "__main__":
             pitch = observation[0]
             ground_position = observation[1]
             ground_velocity = observation[3]
-            v = 10.0 * pitch + 0* ground_position + 0* ground_velocity
+            v = 10 * pitch + 0* ground_position + 0* ground_velocity
             action[0] = v  # action is the next commanded ground velocity
             observation, reward, terminated, truncated, _ = env.step(action)
             env.unwrapped.log("pitch", pitch)

@@ -10,11 +10,10 @@ from upkie.utils.raspi import configure_agent_process, on_raspi
 
 upkie.envs.register()
 
-FORCE_N = 3.
-FORCE_DURATION = 1
-FORCE_STEP = 0.5
-TIME_AFTER_FORCE = 5
-TIME_BEFORE_FORCE = 1
+
+force_duration = 1
+time_after_force = 5
+time_before_force = 3
 pitch_kp = 10
 
 results = []
@@ -26,10 +25,16 @@ upkie.envs.register()
 
 def main(
     env,
-    pitch_kp: float =0,
-    pitch_ki: float = 0,
+    pitch_kp =0,
+    pitch_ki = 0,
     position_kp: float = 0,
     position_ki: float = 0,
+    force=0.,
+    force_duration = 1,
+    time_after_force = 5,
+    time_before_force = 1,
+    failure_angle = np.pi/6
+    
 ):
     results = []
 
@@ -59,18 +64,17 @@ def main(
         )
         action[0] = commanded_velocity
         is_in_force_window = (
-            simtime > TIME_BEFORE_FORCE and 
-            simtime < TIME_BEFORE_FORCE + FORCE_DURATION
+            simtime > time_before_force and 
+            simtime < time_before_force + force_duration
             )
         if (
             force_active
             and is_in_force_window
             ):
-            print("AHHHH")
             env.unwrapped.set_bullet_action({
                 "external_forces": {
                     "base": {
-                        "force": [FORCE_N, 0.0, 0.0],
+                        "force": [force, 0.0, 0.0],
                         "position": [0., 0., 0.]
                     }
                 }
@@ -83,7 +87,7 @@ def main(
             env.unwrapped.set_bullet_action({
                 "external_forces": {
                     "base": {
-                        "force": [FORCE_N, 0.0, 0.0],
+                        "force": [force, 0.0, 0.0],
                         "position": [0., 0., 0.]
                     }
                 }
@@ -95,9 +99,8 @@ def main(
 
         observation, _, terminated, truncated, info = env.step(action)
 
-        if pitch >= 1 or pitch <= -1:
+        if pitch >= failure_angle or pitch <= -failure_angle:
             success=False
-
             break
 
         if terminated or truncated:   
@@ -107,13 +110,41 @@ def main(
             success=False
             break
         
-        if not force_active and simtime > FORCE_DURATION + TIME_AFTER_FORCE + TIME_BEFORE_FORCE:
+        if not force_active and simtime > force_duration + time_after_force + time_before_force:
             success = True
             break
+    results.append((
+        force, success, pitches))
+    print(f"Force {
+        force:>6.1f} N -> {'Success' if success else 'Failure'}")
+    return success
 
-
-    results.append((FORCE_N, success, pitches))
-    print(f"Force {FORCE_N:>6.1f} N -> {'Success' if success else 'Failure'}")
+def run_one_simulation(
+    pitch_kp =0,
+    pitch_ki = 0,
+    position_kp = 0,
+    position_ki = 0,
+    force=0.,
+    force_duration = 1,
+    time_after_force = 5,
+    time_before_force = 1,
+    failure_angle=np.pi/6
+    ):
+    if on_raspi():
+        configure_agent_process()
+    with gym.make("UpkieGroundVelocity-v4", frequency=100.0) as env: 
+        F = main(
+            pitch_kp,
+            pitch_ki,
+            position_kp,
+            position_ki,
+            force,
+            force_duration,
+            time_after_force, 
+            time_before_force,
+            failure_angle=failure_angle
+            )
+    return F
 
  
 
@@ -123,4 +154,5 @@ if __name__ == "__main__":
     if on_raspi():
         configure_agent_process()
     with gym.make("UpkieGroundVelocity-v4", frequency=100.0) as env:
-        F = main(env, pitch_kp = pitch_kp)
+        F = main(env, pitch_kp = pitch_kp, force=4., failure_angle=np.pi/6)
+        print(F)
